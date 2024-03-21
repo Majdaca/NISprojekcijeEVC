@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive Map</title>
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Interactive Map</h1>
+
+<div id="map"></div>
+
+<button onclick="undoMarker()">Undo</button>
+
+<button onclick="deleteStorage()">Delete storage</button>
+
+<button onclick="loadFromStorage()">Load from storage</button>
+
+<button onclick="saveToStorage()">Save to storage</button>
+
+<button onclick="saveMarkersToLocalFile()">Save markers to local file</button>
+
+<script>
+    var map;
+    var markers = [];
+    var circles = [];
+    const savedMarkersName = "savedMarkers"
+    const radius = 60000; // 60km
+    const fillOpacity = 0.25;
+
+    const staticMarkers = [
+        {"lat":46.08955467089755,"lng":19.645158188613088},
+        {"lat":46.12555825867278,"lng":19.835031901568712},
+        {"lat":45.12058277547692,"lng":19.22504425048828},
+        {"lat":45.77086332251356,"lng":19.113005601978035},
+        {"lat":43.973551668107405,"lng":19.56832012726835},
+        {"lat":43.45948151027573,"lng":19.819839774508555},
+        {"lat":43.14646785289536,"lng":20.528038521741987},
+        {"lat":43.13758648066706,"lng":21.27303957939148},
+        {"lat":43.72560889390944,"lng":19.706486511464234},
+        {"lat":42.30587995740966,"lng":21.652679443359375},
+        {"lat":42.83502993024542,"lng":21.584707204590124},
+        {"lat":43.012387843644596,"lng":22.768240365084353},
+        {"lat":44.62173988168101,"lng":22.58799600479281},
+        {"lat":43.89563491153263,"lng":22.290143966674805},
+        {"lat":45.10665144744741,"lng":21.280152797698975},
+        {"lat":44.47189597373109,"lng":21.677718883235503},
+        {"lat":44.53722698739974,"lng":19.223735332489014},
+        {"lat":44.46053517636902,"lng":20.069238531797815},
+        {"lat":42.83294306716608,"lng":22.131122716886832},
+        {"lat":43.38528366006814,"lng":21.806829316110115},
+        {"lat":43.678495452545945,"lng":21.546146631639655},
+        {"lat":44.06346438360379,"lng":21.20604878839716},
+        {"lat":44.34493244728342,"lng":21.078651653200637},
+        {"lat":44.71511691380623,"lng":20.503562286876246},
+        {"lat":44.919732681761324,"lng":19.961368536604986},
+        {"lat":45.58270185578748,"lng":19.617460269523992},
+        {"lat":45.931725906728495,"lng":20.06872059481635},
+        {"lat":43.46996896582616,"lng":20.61860784536626},
+        {"lat":43.93681538718026,"lng":20.399792918613393},
+        {"lat":44.235805755469215,"lng":22.535584018619534},
+        {"lat":45.48214576349618,"lng":20.55461190135023},
+        {"lat":45.27599513763392,"lng":19.92097577519265},
+        {"lat":45.72889424824818,"lng":20.696309352379924},
+        {"lat":45.816398944079474,"lng":20.437286087024905},
+        {"lat":44.83098198613937,"lng":20.36978831264443},
+        {"lat":44.971680425511934,"lng":20.233857422298378}];
+
+    function saveMarkersToLocalFile()
+    {
+        const link = document.createElement("a");
+        const file = new Blob([localStorage.getItem(savedMarkersName)], {type: 'text/plain'});
+
+        link.href = URL.createObjectURL(file);
+        link.download = "markers.json";
+
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+    function deleteStorage()
+    {
+        localStorage.setItem(savedMarkersName, "[]");
+    }
+
+    function loadFromStorage()
+    {
+        let storedMarkers = JSON.parse(localStorage.getItem(savedMarkersName));
+        for(let i = 0; i < storedMarkers.length; i++)
+        {
+            markers.push(new google.maps.Marker({
+                position: storedMarkers[i],
+                map: map
+            }));
+
+            circles.push(new google.maps.Circle({
+                strokeColor: '#FF0000',
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: '#FF0000',
+                fillOpacity: fillOpacity,
+                map: map,
+                center: storedMarkers[i],
+                radius: radius
+            }));
+        }
+    }
+
+    function saveToStorage()
+    {
+        let markersToSave = [];
+        for(let i = 0; i < markers.length; i++)
+        {
+            markersToSave.push(markers[i].position);
+        }
+        localStorage.setItem(savedMarkersName, JSON.stringify(markersToSave));
+    }
+
+    function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: {lat: 44.01, lng: 21.00},
+            zoom: 6
+        });
+
+        map.addListener('click', function(event) {
+            placeMarker(event.latLng);
+        });
+
+        for(let i = 0; i < staticMarkers.length; i++)
+        {
+            markers.push(new google.maps.Marker({
+                position: staticMarkers[i],
+                map: map
+            }));
+
+            circles.push(new google.maps.Circle({
+                strokeColor: '#FF0000',
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: '#FF0000',
+                fillOpacity: fillOpacity,
+                map: map,
+                center: staticMarkers[i],
+                radius: radius
+            }));
+        }
+    }
+
+    function placeMarker(location) {
+        var marker = new google.maps.Marker({
+            position: location,
+            map: map
+        });
+
+        markers.push(marker);
+        
+
+        var circle = new google.maps.Circle({
+            strokeColor: '#FF0000',
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: '#FF0000',
+            fillOpacity: fillOpacity,
+            map: map,
+            center: location,
+            radius: radius
+        });
+        
+        circle.addListener('click', function(event) {
+            placeMarker(event.latLng);
+        });
+        
+        circles.push(circle);
+    }
+
+    function undoMarker() {
+        var lastMarker = markers.pop();
+        if (lastMarker) {
+            lastMarker.setMap(null);
+        }
+
+        var lastCircle = circles.pop();
+        if (lastCircle) {
+            lastCircle.setMap(null);
+        }
+    }
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCtHIzafXcajI-JEp5667YNocH7UQd9q2Q&callback=initMap" async defer></script>
+</body>
+</html>
